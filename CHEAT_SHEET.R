@@ -1,6 +1,14 @@
 #############################
-# CHEAT SHEET by PINAR DENIZ
+# CHEAT SHEET
 #############################
+
+
+# run a line CTRL + ENTER
+#  # passive /comment line CTRL + SHIFT + C
+# <- insert symbol ALT + -
+
+a <- 1+1 #komment
+
 
 #############################
 # Using Libraries
@@ -69,13 +77,20 @@ ekc <- read.table("ekc.txt", sep = "\t", stringsAsFactors = FALSE,header = TRUE,
 # use read.delim() when you know your data is tab-delimited, as it simplifies the process.
 # Use read.table() for more general cases or when dealing with different types of delimiters.
 
-write.table(ekc, "file.txt") # write a delimited text file.
+write.table(ekc, "deneme.txt") # write a delimited text file.
 write.csv(ekc, "file.csv") # write a comma separated value file
 
 
 #############################
 # Creating Vectors
 #############################
+
+a <- c(1:3)
+print(a)
+
+b <- seq(2,3, by=0.5)
+
+c <-c("a",'b') 
 
 c(2, 4, 6) # 2 4 6 Join elements into a vector
 2:6  # 2 3 4 5 6 An integer sequence
@@ -109,7 +124,10 @@ x <- t(x) # Transpose
 # By Position
 x <- read.delim("ekc.txt",sep = "\t",header = TRUE, stringsAsFactors = FALSE) # here x is a dataframe
 
-x <- c(1,2,5)  # here x is a vector
+y <- x$gdppc
+y <- x[-2]
+
+x <- c("co2", "armut")  # here x is a vector
 x[3] # The fourth element.
 x[-1] # All but the first
 x[2:3] # Elements two to three
@@ -206,7 +224,7 @@ y <- data$co2
 
 data[ , 2]  # this is matrix subsetting using the order [row,column]
 data[2 , 2]  # this is matrix subsetting using the order
-data[2 , ]  # this is matrix subsetting using the order
+y <- data[2 , ]  # this is matrix subsetting using the order
 
 
 log(x) # Natural log
@@ -281,7 +299,7 @@ ggplot(data=ekc,aes(x=loggdppc,y=logco2))+
   geom_smooth(formula = y~poly(x,2), method = "lm")
 
 #to create regression model
-fit<- lm(formula=logco2~loggdppc+gdppc2,data=ekc)
+fit <- lm(formula=logco2~loggdppc+gdppc2,data=ekc)
 summary(fit) # Get more detailed information out a model
 
 aov(fit) # Analysis of variance
@@ -297,3 +315,119 @@ plot(ekc$gdppc, ekc$co2) # Replace with your actual plotting code
 
 dev.off() # Turn off the device
 
+
+
+#############################
+# some additional manipulations
+#############################
+
+ekc <- read.delim("ekc.txt")
+
+# if I want to cut the vector after 58th element
+z <- ekc$gdppc
+y <- z[1:58]
+
+a <- (ekc$gdppc)[1:58] # you can bring arguments together, hence a and y are identical
+
+# lets assume that we have another c variable and would like to merge it with y from before
+c <- ekc$co2[1:58]
+
+b <- data.frame(c,y) # i merge these two vectors, i.e. c and y
+
+colnames(b) <- c("new_name_for_c", "new_name_for_y") # i changed the column names
+
+x <- c(10,10)
+
+d <- rbind(b,x) #i insert x vector as a new row but it goes to the last row
+
+#if i want to insert x in the 4th row
+e <- b[1:3,]
+f <- b[4:58,]
+g <- rbind(e,x,f)
+
+h <- g[-4,] # here i dropped the 4th row from my dataframe
+
+
+#############################
+# some additional for loops
+#############################
+
+# imagine that i want export the tw variables in the dataframe b into two separate notepad files.
+v <- c(1:2) #lets call these file 1 and 2
+h <- paste0(v,".txt") # i am adding .txt to each document so that they can be openned via notepad format
+
+# and here is the for loop: for each element of b, write them under the file names h, which is 1.txt and 2.txt
+
+for (i in seq_along(h)) {
+  write.table(b[i], file = h[i], row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
+
+#############################
+# an entry to dynamic model such as ARDL(0,2)
+#############################
+
+# to take lags or dif
+# for y_t = a+ b*x_{t-2}+u_t
+# for difference -> diff()
+
+# just imagine that ekc is a time series. it is wrong but lets fantasize it
+ekc <- read.delim("ekc.txt")
+n = nrow(ekc)
+
+co2  <- ekc[3:n,3] # dependent variable
+l2.gdppc <-  ekc[1:(n-2),2] #independent variable
+
+ekc1 <- data.frame(co2,l2.gdppc)
+fit<- lm(formula = co2 ~ l2.gdppc,data=ekc1)
+
+# OR
+fit<- lm(formula = co2 ~ l2.gdppc)
+
+
+summary(fit) # estimation results
+
+
+#############################
+# DF 1979 unit root test with constant only delta(x) = a + b*x_{t-1} + u
+#############################
+
+# as there was a question about a unit root test in the lecture, I prepared it for you in a basic form
+# again just imagine that ekc is a time series. it is wrong but lets fantasize it
+
+ekc <- read.delim("ekc.txt")
+n=nrow(ekc)
+x <- ekc$gdppc
+
+deltax  <- diff(x) # dependent variable
+l.x <- x[1:(n-1)] #independent variable
+
+fit <- lm(deltax ~ l.x)
+summary(fit) # Get more detailed information out a model
+# UP TO HERE IS THE DF UNIT ROOT TEST RESULT USING THE COMMAND LM()
+
+
+# NOW, WHY NOT DO THIS MANUALLY
+
+varx <- var(l.x) # variance matrix of x
+varcov <- cov(l.x,deltax) # varcov matrix of x,y
+b <- varcov/varx  # slope coefficient of ols model with y=a+b*x+u
+print(b) # THIS IS THE b COEFFICIENT
+
+a <- mean(deltax)-b*mean(l.x) # THIS IS THE a COEFFICIENT
+
+
+RSS <- sum((deltax-a-b*l.x)^2) # HERE I SIMPLY OBTAINED RSS
+
+
+SE_b <- sqrt(RSS/(n - 2))/sqrt((varx*(n-2))) # HERE I OBTAINED THE STD ERROR OF THE b COEFFICIENT
+
+
+tstat <- b/SE_b # NOT GOT THE T-STAT
+
+# FINALLY AN IF STATEMENT WITH 95% SIGNIFICANCE LEVEL. HENCE I USED CRITICAL VALUE AS 1.96. BTW ABS() IS FOR ABSOLUTE VALUE
+
+if (abs(tstat)>1.96){
+  print("We reject the null of unit root")
+} else {
+  print("We fail to reject the null of unit root")
+}
